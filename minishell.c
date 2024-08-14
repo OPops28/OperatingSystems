@@ -11,7 +11,6 @@
 
 char line[NL]; /* command input buffer */
 
-/* shell prompt */
 void prompt(void) {
     fprintf(stdout, "\n msh> ");
     fflush(stdout);
@@ -25,10 +24,9 @@ int main(int argc, char *argv[], char *envp[]) {
     int i;          /* parse index */
     int background; /* flag for background execution */
 
-    /* prompt for and process one command line at a time */
-    while (1) { /* do Forever */
+    while (1) {
         prompt();
-        if (fgets(line, NL, stdin) == NULL) { /* handle EOF */
+        if (fgets(line, NL, stdin) == NULL) {
             if (feof(stdin)) {
                 fprintf(stderr, "EOF pid %d feof %d ferror %d\n", getpid(), feof(stdin), ferror(stdin));
                 exit(0);
@@ -37,12 +35,12 @@ int main(int argc, char *argv[], char *envp[]) {
         }
 
         if (line[0] == '#' || line[0] == '\n' || line[0] == '\000')
-            continue; /* ignore empty lines and comments */
+            continue;
 
-        background = 0; /* reset background flag */
-        if (line[strlen(line) - 2] == '&') { /* check if command ends with '&' */
+        background = 0;
+        if (line[strlen(line) - 2] == '&') {
             background = 1;
-            line[strlen(line) - 2] = '\0'; /* remove '&' from command */
+            line[strlen(line) - 2] = '\0';
         }
 
         v[0] = strtok(line, sep);
@@ -52,7 +50,6 @@ int main(int argc, char *argv[], char *envp[]) {
                 break;
         }
 
-        /* Check for built-in commands */
         if (strcmp(v[0], "cd") == 0) {
             if (v[1] == NULL) {
                 fprintf(stderr, "cd: expected argument\n");
@@ -61,21 +58,20 @@ int main(int argc, char *argv[], char *envp[]) {
                     perror("cd");
                 }
             }
-            continue; /* return to prompt */
+            continue;
         }
 
-        /* Fork a child process to exec the command in v[0] */
         switch (frkRtnVal = fork()) {
-        case -1: /* fork returns error to parent process */
+        case -1:
             perror("fork");
             break;
 
-        case 0: /* code executed only by child process */
+        case 0:
             execvp(v[0], v);
-            perror("execvp"); /* execvp failed */
-            exit(EXIT_FAILURE); /* terminate child process */
+            perror("execvp");
+            exit(EXIT_FAILURE);
 
-        default: /* code executed only by parent process */
+        default:
             if (background) {
                 printf("[%d] %s running in background\n", frkRtnVal, v[0]);
             } else {
@@ -87,7 +83,7 @@ int main(int argc, char *argv[], char *envp[]) {
                 }
             }
             break;
-        } /* switch */
-    } /* while */
+        }
+    }
     return 0;
-} /* main */
+}
