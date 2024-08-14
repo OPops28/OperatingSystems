@@ -20,12 +20,6 @@ typedef struct {
 BackgroundJob background_jobs[NV];
 int bg_job_count = 0; /* Number of background jobs */
 
-/* Function to display shell prompt */
-void prompt(void) {
-    fprintf(stdout, "\n msh> ");
-    fflush(stdout);
-}
-
 /* Function to handle background jobs */
 void handle_background_jobs() {
     int status;
@@ -54,15 +48,10 @@ int main(int argk, char *argv[], char *envp[]) {
     int job_number; /* Background job number */
 
     while (1) {
-        prompt();
-
         /* Read the command line input */
         if (fgets(line, NL, stdin) == NULL) {
-            if (feof(stdin)) { /* non-zero on EOF */
-                fprintf(stderr, "EOF pid %d feof %d ferror %d\n", getpid(), feof(stdin), ferror(stdin));
-                exit(0);
-            }
-            continue;
+            /* Exit if there is an EOF */
+            exit(0);
         }
 
         /* Ignore comments, empty lines, and null commands */
@@ -125,8 +114,6 @@ int main(int argk, char *argv[], char *envp[]) {
                     wpid = waitpid(frkRtnVal, NULL, 0);
                     if (wpid == -1) {
                         perror("waitpid");
-                    } else {
-                        printf("%s done\n", v[0]);
                     }
                 }
                 break;
