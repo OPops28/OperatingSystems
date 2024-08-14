@@ -40,7 +40,7 @@ int main(int argc, char *argv[], char *envp[]) {
         background = 0;
         if (line[strlen(line) - 2] == '&') {
             background = 1;
-            line[strlen(line) - 2] = '\0';
+            line[strlen(line) - 2] = '\0';  // remove '&' from command
         }
 
         v[0] = strtok(line, sep);
@@ -50,6 +50,7 @@ int main(int argc, char *argv[], char *envp[]) {
                 break;
         }
 
+        // Handle built-in commands
         if (strcmp(v[0], "cd") == 0) {
             if (v[1] == NULL) {
                 fprintf(stderr, "cd: expected argument\n");
@@ -58,24 +59,25 @@ int main(int argc, char *argv[], char *envp[]) {
                     perror("cd");
                 }
             }
-            continue;
+            continue;  // Go back to prompt
         }
 
+        // Fork a new process to handle other commands
         switch (frkRtnVal = fork()) {
-        case -1:
+        case -1:  // Error during fork
             perror("fork");
             break;
 
-        case 0:
+        case 0:   // Child process
             execvp(v[0], v);
-            perror("execvp");
-            exit(EXIT_FAILURE);
+            perror("execvp");  // Exec failed, report error
+            exit(EXIT_FAILURE); // Exit child process if exec fails
 
-        default:
+        default:  // Parent process
             if (background) {
                 printf("[%d] %s running in background\n", frkRtnVal, v[0]);
             } else {
-                wpid = waitpid(frkRtnVal, NULL, 0);
+                wpid = waitpid(frkRtnVal, NULL, 0);  // Wait for the foreground process
                 if (wpid == -1) {
                     perror("waitpid");
                 } else {
