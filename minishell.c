@@ -11,10 +11,37 @@
 
 char line[NL]; /* command input buffer */
 
+typedef struct {
+    int pid;
+    int job_number;
+    char command[NL];
+} BackgroundJob;
+
+BackgroundJob background_jobs[NV];
+int bg_job_count = 0; /* Number of background jobs */
+
 /* Function to display shell prompt */
 void prompt(void) {
     fprintf(stdout, "\n msh> ");
     fflush(stdout);
+}
+
+/* Function to handle background jobs */
+void handle_background_jobs() {
+    int status;
+    for (int i = 0; i < bg_job_count; i++) {
+        int wpid = waitpid(background_jobs[i].pid, &status, WNOHANG);
+        if (wpid > 0) {
+            /* Background job finished */
+            printf("[%d]+ Done %s\n", background_jobs[i].job_number, background_jobs[i].command);
+            /* Remove job from list */
+            for (int j = i; j < bg_job_count - 1; j++) {
+                background_jobs[j] = background_jobs[j + 1];
+            }
+            bg_job_count--;
+            i--;
+        }
+    }
 }
 
 int main(int argk, char *argv[], char *envp[]) {
@@ -24,6 +51,7 @@ int main(int argk, char *argv[], char *envp[]) {
     char *sep = " \t\n"; /* command line token separators */
     int i;          /* parse index */
     int background; /* flag for background execution */
+    int job_number; /* Background job number */
 
     while (1) {
         prompt();
@@ -69,6 +97,9 @@ int main(int argk, char *argv[], char *envp[]) {
             continue;  /* Return to prompt */
         }
 
+        /* Handle background jobs before executing new command */
+        handle_background_jobs();
+
         /* Fork a new process to execute the command */
         switch (frkRtnVal = fork()) {
             case -1:  /* Fork error */
@@ -82,8 +113,13 @@ int main(int argk, char *argv[], char *envp[]) {
 
             default:  /* Parent process */
                 if (background) {
-                    /* Background process - print message and do not wait */
-                    printf("[%d] %s running in background\n", frkRtnVal, v[0]);
+                    /* Background process - print message and add to background jobs list */
+                    job_number = bg_job_count + 1;
+                    background_jobs[bg_job_count].pid = frkRtnVal;
+                    background_jobs[bg_job_count].job_number = job_number;
+                    strncpy(background_jobs[bg_job_count].command, v[0], NL);
+                    bg_job_count++;
+                    printf("[%d] %d\n", job_number, frkRtnVal);
                 } else {
                     /* Foreground process - wait for it to complete */
                     wpid = waitpid(frkRtnVal, NULL, 0);
