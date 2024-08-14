@@ -43,9 +43,10 @@ int main(int argk, char *argv[], char *envp[]) {
 
         /* Check if the command should be run in the background */
         background = 0;
-        if (line[strlen(line) - 2] == '&') {
+        size_t len = strlen(line);
+        if (len > 1 && line[len - 2] == '&') {
             background = 1;
-            line[strlen(line) - 2] = '\0';  /* Remove '&' from the command */
+            line[len - 2] = '\0';  /* Remove '&' from the command */
         }
 
         /* Tokenize the input command line */
@@ -59,7 +60,7 @@ int main(int argk, char *argv[], char *envp[]) {
         /* Handle built-in commands */
         if (v[0] != NULL && strcmp(v[0], "cd") == 0) {
             if (v[1] == NULL) {
-                fprintf(stderr, "cd: expected argument\n");
+                fprintf(stderr, "cd: missing argument\n");
             } else {
                 if (chdir(v[1]) != 0) {
                     perror("cd");  /* Error handling for chdir */
@@ -97,4 +98,3 @@ int main(int argk, char *argv[], char *envp[]) {
     }
     return 0;
 }
-
