@@ -3,38 +3,41 @@
 #include <unistd.h>
 #include <signal.h>
 
-// Signal handler function
-void handle_signal(int signal) {
-    if (signal == SIGHUP) {
-        printf("Ouch!\n");
-    } else if (signal == SIGINT) {
-        printf("Yeah!\n");
-    }
+void handle_sighup(int sig) {
+    printf("Ouch!\n");
+}
+
+void handle_sigint(int sig) {
+    printf("Yeah!\n");
 }
 
 int main(int argc, char *argv[]) {
-    // Ensure correct number of command line arguments
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <n>\n", argv[0]);
-        return 1;
+        exit(EXIT_FAILURE);
     }
 
-    // Convert input parameter to integer
     int n = atoi(argv[1]);
     if (n <= 0) {
         fprintf(stderr, "Please provide a positive integer.\n");
-        return 1;
+        exit(EXIT_FAILURE);
     }
 
-    // Register signal handlers
-    signal(SIGHUP, handle_signal);
-    signal(SIGINT, handle_signal);
+    // Set up signal handlers
+    struct sigaction sa_sighup, sa_sigint;
+    sa_sighup.sa_handler = handle_sighup;
+    sigemptyset(&sa_sighup.sa_mask);
+    sa_sighup.sa_flags = 0;
+    sigaction(SIGHUP, &sa_sighup, NULL);
 
-    // Print the first n even numbers
+    sa_sigint.sa_handler = handle_sigint;
+    sigemptyset(&sa_sigint.sa_mask);
+    sa_sigint.sa_flags = 0;
+    sigaction(SIGINT, &sa_sigint, NULL);
+
     for (int i = 0; i < n; i++) {
         printf("%d\n", i * 2);
-        fflush(stdout); // Ensure output is printed before sleeping
-        sleep(5);       // Sleep for 5 seconds
+        sleep(5);
     }
 
     return 0;
