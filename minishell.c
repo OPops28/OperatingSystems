@@ -57,7 +57,7 @@ int main(int argk, char *argv[], char *envp[]) {
         }
 
         /* Handle built-in commands */
-        if (strcmp(v[0], "cd") == 0) {
+        if (v[0] != NULL && strcmp(v[0], "cd") == 0) {
             if (v[1] == NULL) {
                 fprintf(stderr, "cd: expected argument\n");
             } else {
