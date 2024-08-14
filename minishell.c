@@ -81,7 +81,7 @@ int main(int argk, char *argv[], char *envp[]) {
 
             default:  /* Parent process */
                 if (background) {
-                    /* Background process - don't wait, but report process ID */
+                    /* Background process - print message and do not wait */
                     printf("[%d] %s running in background\n", frkRtnVal, v[0]);
                 } else {
                     /* Foreground process - wait for it to complete */
@@ -97,3 +97,4 @@ int main(int argk, char *argv[], char *envp[]) {
     }
     return 0;
 }
+
