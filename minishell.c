@@ -11,12 +11,13 @@
 
 char line[NL]; /* command input buffer */
 
+/* Function to display shell prompt */
 void prompt(void) {
     fprintf(stdout, "\n msh> ");
     fflush(stdout);
 }
 
-int main(int argc, char *argv[], char *envp[]) {
+int main(int argk, char *argv[], char *envp[]) {
     int frkRtnVal;  /* value returned by fork sys call */
     int wpid;       /* value returned by wait */
     char *v[NV];    /* array of pointers to command line tokens */
@@ -26,23 +27,28 @@ int main(int argc, char *argv[], char *envp[]) {
 
     while (1) {
         prompt();
+
+        /* Read the command line input */
         if (fgets(line, NL, stdin) == NULL) {
-            if (feof(stdin)) {
+            if (feof(stdin)) { /* non-zero on EOF */
                 fprintf(stderr, "EOF pid %d feof %d ferror %d\n", getpid(), feof(stdin), ferror(stdin));
                 exit(0);
             }
             continue;
         }
 
+        /* Ignore comments, empty lines, and null commands */
         if (line[0] == '#' || line[0] == '\n' || line[0] == '\000')
             continue;
 
+        /* Check if the command should be run in the background */
         background = 0;
         if (line[strlen(line) - 2] == '&') {
             background = 1;
-            line[strlen(line) - 2] = '\0';  // remove '&' from command
+            line[strlen(line) - 2] = '\0';  /* Remove '&' from the command */
         }
 
+        /* Tokenize the input command line */
         v[0] = strtok(line, sep);
         for (i = 1; i < NV; i++) {
             v[i] = strtok(NULL, sep);
@@ -50,41 +56,43 @@ int main(int argc, char *argv[], char *envp[]) {
                 break;
         }
 
-        // Handle built-in commands
+        /* Handle built-in commands */
         if (strcmp(v[0], "cd") == 0) {
             if (v[1] == NULL) {
                 fprintf(stderr, "cd: expected argument\n");
             } else {
                 if (chdir(v[1]) != 0) {
-                    perror("cd");
+                    perror("cd");  /* Error handling for chdir */
                 }
             }
-            continue;  // Go back to prompt
+            continue;  /* Return to prompt */
         }
 
-        // Fork a new process to handle other commands
+        /* Fork a new process to execute the command */
         switch (frkRtnVal = fork()) {
-        case -1:  // Error during fork
-            perror("fork");
-            break;
+            case -1:  /* Fork error */
+                perror("fork");
+                break;
 
-        case 0:   // Child process
-            execvp(v[0], v);
-            perror("execvp");  // Exec failed, report error
-            exit(EXIT_FAILURE); // Exit child process if exec fails
+            case 0:   /* Child process */
+                execvp(v[0], v);
+                perror("execvp");  /* Execvp failed, report error */
+                exit(EXIT_FAILURE);  /* Exit child process if exec fails */
 
-        default:  // Parent process
-            if (background) {
-                printf("[%d] %s running in background\n", frkRtnVal, v[0]);
-            } else {
-                wpid = waitpid(frkRtnVal, NULL, 0);  // Wait for the foreground process
-                if (wpid == -1) {
-                    perror("waitpid");
+            default:  /* Parent process */
+                if (background) {
+                    /* Background process - don't wait, but report process ID */
+                    printf("[%d] %s running in background\n", frkRtnVal, v[0]);
                 } else {
-                    printf("%s done\n", v[0]);
+                    /* Foreground process - wait for it to complete */
+                    wpid = waitpid(frkRtnVal, NULL, 0);
+                    if (wpid == -1) {
+                        perror("waitpid");
+                    } else {
+                        printf("%s done\n", v[0]);
+                    }
                 }
-            }
-            break;
+                break;
         }
     }
     return 0;
