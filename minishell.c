@@ -14,7 +14,7 @@ int bg_jobs = 0; /* background job counter */
 
 /* shell prompt */
 void prompt(void) {
-    fprintf(stdout, "\n msh> ");
+    fprintf(stdout, "\nmsh> ");
     fflush(stdout);
 }
 
@@ -24,16 +24,15 @@ void bg_handler(int sig) {
     pid_t pid;
 
     while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
-        printf("\n[%d]+ Done %d\n", bg_jobs, pid);
+        printf("[%d]+ Done %d\n", bg_jobs, pid);
+        fflush(stdout);
         bg_jobs--;
-        prompt();  // Reprompt after background process finishes
     }
 }
 
 /* main function */
 int main(int argk, char *argv[], char *envp[]) {
     int frkRtnVal; /* value returned by fork sys call */
-    int wpid; /* value returned by wait */
     char *v[NV]; /* array of pointers to command line tokens */
     char *sep = " \t\n"; /* command line token separators */
     int i; /* parse index */
@@ -96,12 +95,13 @@ int main(int argk, char *argv[], char *envp[]) {
             exit(1);
         }
 
-        if (!bg_flag) { /* code executed only by parent process */
-            wpid = waitpid(frkRtnVal, NULL, 0);
-            if (wpid < 0) {
+        if (bg_flag) { /* if command is to be run in background */
+            printf("[%d] %d\n", bg_jobs, frkRtnVal);  // Print message when background process starts
+            fflush(stdout);
+        } else { /* code executed only by parent process for foreground process */
+            int status;
+            if (waitpid(frkRtnVal, &status, 0) < 0) {
                 perror("waitpid failed");
-            } else {
-                printf("%s done \n", v[0]);
             }
         }
     } /* while */
